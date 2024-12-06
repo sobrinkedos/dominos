@@ -40,16 +40,18 @@ function App() {
       <nav className="bg-white shadow-lg">
         <div className="max-w-6xl mx-auto px-4">
           <div className="flex justify-between items-center h-16">
-            <div className="text-xl font-bold text-gray-800">Dominos</div>
-            {/* Botão do menu mobile */}
-            <button 
-              onClick={toggleDrawer}
-              className="md:hidden text-gray-600 hover:text-gray-900"
-            >
-              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
+            <div className="flex items-center">
+              {/* Botão do menu mobile movido para a esquerda */}
+              <button 
+                onClick={toggleDrawer}
+                className="md:hidden text-gray-600 hover:text-gray-900 mr-4"
+              >
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+              <div className="text-xl font-bold text-gray-800">Dominos</div>
+            </div>
             {/* Links de navegação para desktop */}
             <div className="hidden md:flex space-x-4">
               <a href="#" className="text-gray-600 hover:text-gray-900">Home</a>
