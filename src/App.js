@@ -1,28 +1,53 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Route, Routes, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Link, useLocation, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Home from './pages/Home';
 import Competitions from './pages/Competitions';
 import CompetitionDetails from './pages/CompetitionDetails';
 import Players from './pages/Players';
 import Statistics from './pages/Statistics';
+import Login from './pages/Login';
+import Register from './pages/Register';
+
+function PrivateRoute({ children }) {
+  const { user } = useAuth();
+  const location = useLocation();
+
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  return children;
+}
 
 function App() {
+  return (
+    <Router>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </Router>
+  );
+}
+
+function AppContent() {
+  const location = useLocation();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const { user, logout } = useAuth();
 
   const toggleDrawer = () => {
     setIsDrawerOpen(!isDrawerOpen);
   };
 
-  return (
-    <Router>
-      <AppContent isDrawerOpen={isDrawerOpen} toggleDrawer={toggleDrawer} />
-    </Router>
-  );
-}
-
-function AppContent({ isDrawerOpen, toggleDrawer }) {
-  const location = useLocation();
-  const [activeTab, setActiveTab] = useState(location.pathname.slice(1) || 'home');
+  // Não mostrar drawer nas páginas de login e registro
+  if (['/login', '/register'].includes(location.pathname)) {
+    return (
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+      </Routes>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 relative pb-16 md:pb-0">
@@ -50,6 +75,15 @@ function AppContent({ isDrawerOpen, toggleDrawer }) {
             <Link to="/competitions" onClick={toggleDrawer} className="text-gray-600 hover:text-gray-900">Competições</Link>
             <Link to="/players" onClick={toggleDrawer} className="text-gray-600 hover:text-gray-900">Jogadores</Link>
             <Link to="/statistics" onClick={toggleDrawer} className="text-gray-600 hover:text-gray-900">Estatísticas</Link>
+            <button
+              onClick={() => {
+                logout();
+                toggleDrawer();
+              }}
+              className="text-gray-600 hover:text-gray-900 text-left"
+            >
+              Sair
+            </button>
           </div>
         </div>
       </div>
@@ -69,11 +103,19 @@ function AppContent({ isDrawerOpen, toggleDrawer }) {
               </button>
               <div className="text-xl font-bold text-gray-800">Dominó Score</div>
             </div>
-            <div className="hidden md:flex space-x-4">
+            <div className="hidden md:flex items-center space-x-4">
               <Link to="/" className="text-gray-600 hover:text-gray-900">Início</Link>
               <Link to="/competitions" className="text-gray-600 hover:text-gray-900">Competições</Link>
               <Link to="/players" className="text-gray-600 hover:text-gray-900">Jogadores</Link>
               <Link to="/statistics" className="text-gray-600 hover:text-gray-900">Estatísticas</Link>
+              <span className="text-gray-600">|</span>
+              <span className="text-gray-600">{user?.name}</span>
+              <button
+                onClick={logout}
+                className="text-gray-600 hover:text-gray-900"
+              >
+                Sair
+              </button>
             </div>
           </div>
         </div>
@@ -83,11 +125,46 @@ function AppContent({ isDrawerOpen, toggleDrawer }) {
       <main className="max-w-6xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/competitions" element={<Competitions />} />
-            <Route path="/competitions/:id" element={<CompetitionDetails />} />
-            <Route path="/players" element={<Players />} />
-            <Route path="/statistics" element={<Statistics />} />
+            <Route
+              path="/"
+              element={
+                <PrivateRoute>
+                  <Home />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/competitions"
+              element={
+                <PrivateRoute>
+                  <Competitions />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/competitions/:id"
+              element={
+                <PrivateRoute>
+                  <CompetitionDetails />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/players"
+              element={
+                <PrivateRoute>
+                  <Players />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/statistics"
+              element={
+                <PrivateRoute>
+                  <Statistics />
+                </PrivateRoute>
+              }
+            />
           </Routes>
         </div>
       </main>
