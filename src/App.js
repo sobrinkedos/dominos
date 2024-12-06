@@ -1,12 +1,27 @@
 import React, { useState } from 'react';
+import { BrowserRouter as Router, Route, Routes, Link, useLocation } from 'react-router-dom';
+import Home from './pages/Home';
+import Competitions from './pages/Competitions';
+import Players from './pages/Players';
+import Statistics from './pages/Statistics';
 
 function App() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('home');
 
   const toggleDrawer = () => {
     setIsDrawerOpen(!isDrawerOpen);
   };
+
+  return (
+    <Router>
+      <AppContent isDrawerOpen={isDrawerOpen} toggleDrawer={toggleDrawer} />
+    </Router>
+  );
+}
+
+function AppContent({ isDrawerOpen, toggleDrawer }) {
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState(location.pathname.slice(1) || 'home');
 
   return (
     <div className="min-h-screen bg-gray-100 relative pb-16 md:pb-0">
@@ -30,10 +45,10 @@ function App() {
             </button>
           </div>
           <div className="flex flex-col space-y-4">
-            <a href="#" className="text-gray-600 hover:text-gray-900">Início</a>
-            <a href="#" className="text-gray-600 hover:text-gray-900">Competições</a>
-            <a href="#" className="text-gray-600 hover:text-gray-900">Jogadores</a>
-            <a href="#" className="text-gray-600 hover:text-gray-900">Estatísticas</a>
+            <Link to="/" onClick={toggleDrawer} className="text-gray-600 hover:text-gray-900">Início</Link>
+            <Link to="/competitions" onClick={toggleDrawer} className="text-gray-600 hover:text-gray-900">Competições</Link>
+            <Link to="/players" onClick={toggleDrawer} className="text-gray-600 hover:text-gray-900">Jogadores</Link>
+            <Link to="/statistics" onClick={toggleDrawer} className="text-gray-600 hover:text-gray-900">Estatísticas</Link>
           </div>
         </div>
       </div>
@@ -54,10 +69,10 @@ function App() {
               <div className="text-xl font-bold text-gray-800">Dominó Score</div>
             </div>
             <div className="hidden md:flex space-x-4">
-              <a href="#" className="text-gray-600 hover:text-gray-900">Início</a>
-              <a href="#" className="text-gray-600 hover:text-gray-900">Competições</a>
-              <a href="#" className="text-gray-600 hover:text-gray-900">Jogadores</a>
-              <a href="#" className="text-gray-600 hover:text-gray-900">Estatísticas</a>
+              <Link to="/" className="text-gray-600 hover:text-gray-900">Início</Link>
+              <Link to="/competitions" className="text-gray-600 hover:text-gray-900">Competições</Link>
+              <Link to="/players" className="text-gray-600 hover:text-gray-900">Jogadores</Link>
+              <Link to="/statistics" className="text-gray-600 hover:text-gray-900">Estatísticas</Link>
             </div>
           </div>
         </div>
@@ -66,85 +81,57 @@ function App() {
       {/* Conteúdo Principal */}
       <main className="max-w-6xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {/* Card Nova Competição */}
-            <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
-              <div className="flex items-center justify-center h-12 w-12 rounded-md bg-blue-500 text-white mb-4">
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-              </div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">Nova Competição</h2>
-              <p className="text-gray-600">Crie uma nova competição e comece a registrar as partidas.</p>
-            </div>
-
-            {/* Card Jogadores */}
-            <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
-              <div className="flex items-center justify-center h-12 w-12 rounded-md bg-green-500 text-white mb-4">
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              </div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">Gerenciar Jogadores</h2>
-              <p className="text-gray-600">Adicione e gerencie os jogadores participantes.</p>
-            </div>
-
-            {/* Card Estatísticas */}
-            <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
-              <div className="flex items-center justify-center h-12 w-12 rounded-md bg-purple-500 text-white mb-4">
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">Estatísticas</h2>
-              <p className="text-gray-600">Visualize estatísticas e histórico de partidas.</p>
-            </div>
-          </div>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/competitions" element={<Competitions />} />
+            <Route path="/players" element={<Players />} />
+            <Route path="/statistics" element={<Statistics />} />
+          </Routes>
         </div>
       </main>
 
       {/* Bottom Navigation para Mobile */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:hidden">
         <div className="flex justify-around items-center h-16">
-          <button 
-            onClick={() => setActiveTab('home')}
-            className={`flex flex-col items-center justify-center w-full h-full ${activeTab === 'home' ? 'text-blue-500' : 'text-gray-600'}`}
+          <Link 
+            to="/"
+            className={`flex flex-col items-center justify-center w-full h-full ${location.pathname === '/' ? 'text-blue-500' : 'text-gray-600'}`}
           >
             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
             </svg>
             <span className="text-xs mt-1">Início</span>
-          </button>
+          </Link>
 
-          <button 
-            onClick={() => setActiveTab('competitions')}
-            className={`flex flex-col items-center justify-center w-full h-full ${activeTab === 'competitions' ? 'text-blue-500' : 'text-gray-600'}`}
+          <Link 
+            to="/competitions"
+            className={`flex flex-col items-center justify-center w-full h-full ${location.pathname === '/competitions' ? 'text-blue-500' : 'text-gray-600'}`}
           >
             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
             <span className="text-xs mt-1">Competições</span>
-          </button>
+          </Link>
 
-          <button 
-            onClick={() => setActiveTab('players')}
-            className={`flex flex-col items-center justify-center w-full h-full ${activeTab === 'players' ? 'text-blue-500' : 'text-gray-600'}`}
+          <Link 
+            to="/players"
+            className={`flex flex-col items-center justify-center w-full h-full ${location.pathname === '/players' ? 'text-blue-500' : 'text-gray-600'}`}
           >
             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
             <span className="text-xs mt-1">Jogadores</span>
-          </button>
+          </Link>
 
-          <button 
-            onClick={() => setActiveTab('stats')}
-            className={`flex flex-col items-center justify-center w-full h-full ${activeTab === 'stats' ? 'text-blue-500' : 'text-gray-600'}`}
+          <Link 
+            to="/statistics"
+            className={`flex flex-col items-center justify-center w-full h-full ${location.pathname === '/statistics' ? 'text-blue-500' : 'text-gray-600'}`}
           >
             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
             <span className="text-xs mt-1">Estatísticas</span>
-          </button>
+          </Link>
         </div>
       </nav>
     </div>
