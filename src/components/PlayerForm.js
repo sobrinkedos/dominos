@@ -1,22 +1,31 @@
 import React, { useState } from 'react';
-import MaskedInput from 'react-text-mask';
 
-function PlayerForm({ player, onSubmit, onCancel }) {
-  const [formData, setFormData] = useState({
-    name: player?.name || '',
-    nickname: player?.nickname || '',
-    phone: player?.phone || ''
-  });
+function PlayerForm({ onSubmit, onCancel, initialData }) {
+  const [name, setName] = useState(initialData?.name || '');
+  const [nickname, setNickname] = useState(initialData?.nickname || '');
+  const [phone, setPhone] = useState(initialData?.phone || '');
+
+  const handlePhoneChange = (e) => {
+    // Remove qualquer caractere que não seja número
+    const value = e.target.value.replace(/\D/g, '');
+    // Limita a 11 dígitos (DDD + 9 dígitos)
+    if (value.length <= 11) {
+      setPhone(value);
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    onSubmit({
+      id: initialData?.id || Date.now(),
+      name,
+      nickname,
+      phone
+    });
   };
 
-  const phoneMask = ['(', /[1-9]/, /\d/, ')', ' ', /\d/, /\d/, /\d/, /\d/, /\d/, '-', /\d/, /\d/, /\d/, /\d/];
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-6">
       <div>
         <label htmlFor="name" className="block text-sm font-medium text-gray-700">
           Nome
@@ -24,8 +33,8 @@ function PlayerForm({ player, onSubmit, onCancel }) {
         <input
           type="text"
           id="name"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
           required
         />
@@ -38,29 +47,31 @@ function PlayerForm({ player, onSubmit, onCancel }) {
         <input
           type="text"
           id="nickname"
-          value={formData.nickname}
-          onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
+          value={nickname}
+          onChange={(e) => setNickname(e.target.value)}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
         />
       </div>
 
       <div>
         <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-          Celular
+          Telefone
         </label>
-        <MaskedInput
-          mask={phoneMask}
-          id="phone"
+        <input
           type="tel"
-          value={formData.phone}
-          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+          id="phone"
+          value={phone}
+          onChange={handlePhoneChange}
+          maxLength="11"
+          placeholder="DDD + Número (apenas números)"
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          placeholder="(99) 99999-9999"
-          guide={true}
         />
+        <p className="mt-1 text-sm text-gray-500">
+          Digite apenas números: DDD + número (máximo 11 dígitos)
+        </p>
       </div>
 
-      <div className="flex justify-end space-x-3 pt-4">
+      <div className="flex justify-end space-x-3">
         <button
           type="button"
           onClick={onCancel}

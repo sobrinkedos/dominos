@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import CompetitionModal from '../components/CompetitionModal';
 import { PencilIcon, TrashIcon, PlayIcon, CheckIcon } from '@heroicons/react/24/outline';
 
 function Competitions() {
+  const navigate = useNavigate();
   const [competitions, setCompetitions] = useState(() => {
     const savedCompetitions = localStorage.getItem('competitions');
     return savedCompetitions ? JSON.parse(savedCompetitions) : [];
@@ -112,7 +114,7 @@ function Competitions() {
           {competitions.map((competition) => (
             <li key={competition.id} className="px-6 py-4 hover:bg-gray-50">
               <div className="flex items-center justify-between">
-                <div className="flex-1">
+                <div className="flex-1 cursor-pointer" onClick={() => navigate(`/competitions/${competition.id}`)}>
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-medium text-gray-900">{competition.name}</h3>
                     <span className={`${getStatusColor(competition.status)} text-sm`}>

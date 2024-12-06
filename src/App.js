@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BrowserRouter as Router, Route, Routes, Link, useLocation } from 'react-router-dom';
 import Home from './pages/Home';
 import Competitions from './pages/Competitions';
+import CompetitionDetails from './pages/CompetitionDetails';
 import Players from './pages/Players';
 import Statistics from './pages/Statistics';
 
@@ -84,6 +85,7 @@ function AppContent({ isDrawerOpen, toggleDrawer }) {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/competitions" element={<Competitions />} />
+            <Route path="/competitions/:id" element={<CompetitionDetails />} />
             <Route path="/players" element={<Players />} />
             <Route path="/statistics" element={<Statistics />} />
           </Routes>
