@@ -39,21 +39,25 @@ function GameDetails() {
   useEffect(() => {
     if (!game) return;
 
-    const totalScore1 = game.matches.reduce((sum, match) => sum + match.team1Score, 0);
-    const totalScore2 = game.matches.reduce((sum, match) => sum + match.team2Score, 0);
+    // Verificações de segurança para os dados do jogo
+    const team1Name = game?.team1?.join(' & ') || 'Time 1';
+    const team2Name = game?.team2?.join(' & ') || 'Time 2';
+    const matchCount = game?.matches?.length || 0;
 
-    // Animar os pontos
+    // Cálculo seguro dos pontos totais
+    const totalScore1 = game?.matches?.reduce((sum, match) => sum + (match?.team1Score || 0), 0) || 0;
+    const totalScore2 = game?.matches?.reduce((sum, match) => sum + (match?.team2Score || 0), 0) || 0;
+
+    // Animar os pontos com verificações de segurança
     setIsAnimating(true);
     let frame = 0;
-    const totalFrames = 20; // Duração da animação em frames
+    const totalFrames = 20;
     const startScore1 = animatedScore1;
     const startScore2 = animatedScore2;
     
     const animate = () => {
       frame++;
       const progress = frame / totalFrames;
-      
-      // Usar easeOutQuad para suavizar a animação
       const easeProgress = 1 - Math.pow(1 - progress, 2);
       
       setAnimatedScore1(Math.round(startScore1 + (totalScore1 - startScore1) * easeProgress));
@@ -67,7 +71,7 @@ function GameDetails() {
     };
 
     animate();
-  }, [game?.matches]);
+  }, [game?.matches, animatedScore1, animatedScore2]);
 
   const handleResultSubmit = (result) => {
     if (!game || !currentMatch) return;
@@ -166,8 +170,13 @@ function GameDetails() {
   };
 
   if (!game) {
-    return <div>Carregando...</div>;
+    return <div className="p-4">Carregando...</div>;
   }
+
+  // Verificações de segurança para os dados do jogo
+  const team1Name = game?.team1?.join(' & ') || 'Time 1';
+  const team2Name = game?.team2?.join(' & ') || 'Time 2';
+  const matchCount = game?.matches?.length || 0;
 
   return (
     <div className="space-y-6">
@@ -181,7 +190,7 @@ function GameDetails() {
               Jogo Encerrado!
             </h3>
             <p className="text-green-700">
-              Vencedor: {game.winner === 1 ? game.team1.join(' & ') : game.team2.join(' & ')}
+              Vencedor: {game.winner === 1 ? team1Name : team2Name}
             </p>
             <p className="text-green-700">
               Placar Final: {animatedScore1} x {animatedScore2}
@@ -190,16 +199,16 @@ function GameDetails() {
         ) : (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
             <p className="text-blue-700">
-              Jogo em andamento - Partida {game.matches.length} de no máximo 6
+              Jogo em andamento - Partida {matchCount} de no máximo 6
             </p>
           </div>
         )}
 
         <div className="flex justify-between items-center mb-6">
           <div className="text-lg">
-            <span className="font-semibold">{game.team1.join(' & ')}</span>
+            <span className="font-semibold">{team1Name}</span>
             <span className="mx-2">vs</span>
-            <span className="font-semibold">{game.team2.join(' & ')}</span>
+            <span className="font-semibold">{team2Name}</span>
           </div>
           <div className={`text-3xl font-bold transition-all duration-300 ${isAnimating ? 'scale-110' : ''}`}>
             <span className={game.winner === 1 ? 'text-green-600' : ''}>{animatedScore1}</span>
@@ -240,7 +249,7 @@ function GameDetails() {
               {match.result && (
                 <div className="mt-2 text-sm text-gray-600">
                   Resultado: {match.result.type === 'draw' ? 'Empate' : `${
-                    match.result.winningTeam === 1 ? game.team1.join(' & ') : game.team2.join(' & ')
+                    match.result.winningTeam === 1 ? team1Name : team2Name
                   } venceu por ${match.result.type}`}
                 </div>
               )}
