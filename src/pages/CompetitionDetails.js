@@ -84,14 +84,23 @@ function CompetitionDetails() {
     };
   }, [id, navigate]);
 
+  // Função para formatar o número do jogo com dois dígitos
+  const formatGameNumber = (number) => {
+    return String(number).padStart(2, '0');
+  };
+
   // Função para atualizar os dados quando um novo jogo é adicionado
   const handleAddGame = (gameData) => {
+    const games = JSON.parse(localStorage.getItem('games') || '[]');
+    const gameNumber = games.filter(g => g.competitionId === parseInt(id)).length + 1;
+    
     const newGame = {
       id: Date.now(),
+      gameNumber,
       competitionId: parseInt(id),
       ...gameData,
       matches: [{
-        id: Date.now(),
+        id: `match_${Date.now()}_1`,
         number: 1,
         result: null,
         team1Score: 0,
@@ -101,8 +110,7 @@ function CompetitionDetails() {
     };
 
     // Atualizar localStorage
-    const allGames = JSON.parse(localStorage.getItem('games') || '[]');
-    const updatedAllGames = [...allGames, newGame];
+    const updatedAllGames = [...games, newGame];
     localStorage.setItem('games', JSON.stringify(updatedAllGames));
 
     // Atualizar estado local

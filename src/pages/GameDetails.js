@@ -3,11 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import GameResultModal from '../components/GameResultModal';
 
 const resultTypes = [
-  { id: 'simple', points: 1 },
-  { id: 'carroca', points: 2 },
-  { id: 'la-e-lo', points: 3 },
-  { id: 'cruzada', points: 4 },
-  { id: 'draw', points: 0 },
+  { id: 'simple', points: 1, label: 'Batida Simples' },
+  { id: 'carroca', points: 2, label: 'Batida de Carroça' },
+  { id: 'la-e-lo', points: 3, label: 'Batida de Lá-e-Lô' },
+  { id: 'cruzada', points: 4, label: 'Batida de Cruzada' },
+  { id: 'draw', points: 0, label: 'Empate' },
 ];
 
 function GameDetails() {
@@ -21,11 +21,47 @@ function GameDetails() {
   const [isAnimating, setIsAnimating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Função para formatar o número do jogo com dois dígitos
+  const formatGameNumber = (number) => {
+    return String(number).padStart(2, '0');
+  };
+
+  // Função para obter o nome do jogador
+  const getPlayerName = (playerId) => {
+    try {
+      const players = JSON.parse(localStorage.getItem('players') || '[]');
+      const player = players.find(p => p.id === playerId);
+      return player ? player.name : 'Jogador';
+    } catch (error) {
+      console.error('Erro ao buscar nome do jogador:', error);
+      return 'Jogador';
+    }
+  };
+
+  // Calcular os nomes das equipes e informações do jogo
+  const { team1Name, team2Name, totalScore1, totalScore2 } = useMemo(() => {
+    if (!game) return { 
+      team1Name: 'Time 1', 
+      team2Name: 'Time 2',
+      totalScore1: 0,
+      totalScore2: 0
+    };
+
+    const team1Players = game.team1?.map(getPlayerName) || ['Time 1'];
+    const team2Players = game.team2?.map(getPlayerName) || ['Time 2'];
+
+    return {
+      team1Name: team1Players.join(' & '),
+      team2Name: team2Players.join(' & '),
+      totalScore1: game.matches?.reduce((sum, match) => sum + (match?.team1Score || 0), 0) || 0,
+      totalScore2: game.matches?.reduce((sum, match) => sum + (match?.team2Score || 0), 0) || 0
+    };
+  }, [game]);
+
   useEffect(() => {
     const loadGame = () => {
       try {
         const games = JSON.parse(localStorage.getItem('games')) || [];
-        // Converter id para número para garantir a comparação correta
         const gameId = parseInt(id);
         console.log('Procurando jogo com ID:', gameId);
         console.log('Jogos disponíveis:', games);
@@ -36,8 +72,9 @@ function GameDetails() {
         if (foundGame) {
           // Se não houver partidas, criar a primeira
           if (!foundGame.matches || foundGame.matches.length === 0) {
+            const firstMatchId = `match_${gameId}_1`;
             foundGame.matches = [{
-              id: Date.now(),
+              id: firstMatchId,
               number: 1,
               result: null,
               team1Score: 0,
@@ -48,6 +85,12 @@ function GameDetails() {
             // Atualizar o localStorage com a nova partida
             localStorage.setItem('games', JSON.stringify(games));
           }
+
+          // Garantir que todas as partidas tenham IDs únicos
+          foundGame.matches = foundGame.matches.map((match, index) => ({
+            ...match,
+            id: match.id || `match_${gameId}_${index + 1}`
+          }));
 
           setGame(foundGame);
           
@@ -67,15 +110,6 @@ function GameDetails() {
 
   useEffect(() => {
     if (!game) return;
-
-    // Verificações de segurança para os dados do jogo
-    const team1Name = game?.team1?.join(' & ') || 'Time 1';
-    const team2Name = game?.team2?.join(' & ') || 'Time 2';
-    const matchCount = game?.matches?.length || 0;
-
-    // Cálculo seguro dos pontos totais
-    const totalScore1 = game?.matches?.reduce((sum, match) => sum + (match?.team1Score || 0), 0) || 0;
-    const totalScore2 = game?.matches?.reduce((sum, match) => sum + (match?.team2Score || 0), 0) || 0;
 
     // Animar os pontos com verificações de segurança
     setIsAnimating(true);
@@ -100,15 +134,7 @@ function GameDetails() {
     };
 
     animate();
-  }, [game?.matches, animatedScore1, animatedScore2]);
-
-  const { team1Name, team2Name, totalScore1, totalScore2, matchCount } = useMemo(() => ({
-    team1Name: game?.team1?.join(' & ') || 'Time 1',
-    team2Name: game?.team2?.join(' & ') || 'Time 2',
-    totalScore1: game?.matches?.reduce((sum, match) => sum + (match?.team1Score || 0), 0) || 0,
-    totalScore2: game?.matches?.reduce((sum, match) => sum + (match?.team2Score || 0), 0) || 0,
-    matchCount: game?.matches?.length || 0
-  }), [game]);
+  }, [game?.matches, animatedScore1, animatedScore2, totalScore1, totalScore2]);
 
   const handleResultSubmit = (result) => {
     if (!game || !currentMatch) return;
@@ -165,8 +191,9 @@ function GameDetails() {
       };
     } else {
       // Criar nova partida
+      const newMatchId = `match_${game.id}_${game.matches.length + 1}`;
       const newMatch = {
-        id: Date.now(),
+        id: newMatchId,
         number: game.matches.length + 1,
         result: null,
         team1Score: 0,
@@ -215,7 +242,7 @@ function GameDetails() {
   return (
     <div className="space-y-6">
       <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-2xl font-bold mb-4">Jogo #{game.id}</h2>
+        <h2 className="text-2xl font-bold mb-4">Jogo #{formatGameNumber(game.gameNumber || game.id)}</h2>
         
         {/* Status do Jogo */}
         {game.completed ? (
@@ -233,7 +260,7 @@ function GameDetails() {
         ) : (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
             <p className="text-blue-700">
-              Jogo em andamento - Partida {matchCount} de no máximo 6
+              Jogo em andamento - Partida {formatGameNumber(game.matches.length || 0)} de no máximo 6
             </p>
           </div>
         )}
@@ -282,9 +309,14 @@ function GameDetails() {
               </div>
               {match.result && (
                 <div className="mt-2 text-sm text-gray-600">
-                  Resultado: {match.result.type === 'draw' ? 'Empate' : `${
-                    match.result.winningTeam === 1 ? team1Name : team2Name
-                  } venceu por ${match.result.type}`}
+                  {match.result.type === 'draw' ? (
+                    'Empate'
+                  ) : (
+                    <span>
+                      {match.result.winningTeam === 1 ? team1Name : team2Name} venceu por{' '}
+                      {resultTypes.find(t => t.id === match.result.type)?.label || match.result.type}
+                    </span>
+                  )}
                 </div>
               )}
             </div>
