@@ -3,9 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import GameResultModal from '../components/GameResultModal';
 
 const resultTypes = [
-  { id: 'simple', points: 1, label: 'Batida Simples' },
+  { id: 'batida_simples', points: 1, label: 'Batida Simples' },
   { id: 'carroca', points: 2, label: 'Batida de Carroça' },
-  { id: 'la-e-lo', points: 3, label: 'Batida de Lá-e-Lô' },
+  { id: 'la_e_lo', points: 3, label: 'Batida de Lá-e-Lô' },
   { id: 'cruzada', points: 4, label: 'Batida de Cruzada' },
   { id: 'draw', points: 0, label: 'Empate' },
 ];

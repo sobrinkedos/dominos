@@ -1,143 +1,146 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 const resultTypes = [
-  { id: 'simple', label: 'Batida Simples', points: 1 },
-  { id: 'carroca', label: 'Batida de Carroça', points: 2 },
-  { id: 'la-e-lo', label: 'Batida de Lá-e-Lô', points: 3 },
-  { id: 'cruzada', label: 'Batida de Cruzada', points: 4 },
-  { id: 'draw', label: 'Partida Empatada', points: 0 },
+  { id: 'batida_simples', label: 'Simples', description: 'Batida normal', points: 1 },
+  { id: 'carroca', label: 'Carroça', description: 'Batida com carroça', points: 2 },
+  { id: 'la_e_lo', label: 'Lá e Lô', description: 'Batida especial', points: 3 },
+  { id: 'cruzada', label: 'Cruzada', description: 'Batida cruzada', points: 4 },
 ];
 
 function GameResultModal({ isOpen, onClose, onSubmit, game }) {
-  const [selectedType, setSelectedType] = useState('');
-  const [winningTeam, setWinningTeam] = useState(null);
-  const [team1Name, setTeam1Name] = useState('Time 1');
-  const [team2Name, setTeam2Name] = useState('Time 2');
-
-  // Resetar estado quando o modal fecha
-  useEffect(() => {
-    if (!isOpen) {
-      setSelectedType('');
-      setWinningTeam(null);
-    }
-  }, [isOpen]);
-
-  // Atualizar nomes das equipes quando o jogo mudar
-  useEffect(() => {
-    if (!game) {
-      setTeam1Name('Time 1');
-      setTeam2Name('Time 2');
-      return;
-    }
-
-    try {
-      const players = JSON.parse(localStorage.getItem('players') || '[]');
-      
-      const getPlayerName = (playerId) => {
-        const player = players.find(p => p.id === playerId);
-        return player ? player.name : 'Jogador';
-      };
-
-      if (Array.isArray(game.team1) && game.team1.length > 0) {
-        const team1Players = game.team1.map(getPlayerName);
-        setTeam1Name(team1Players.join(' & '));
-      }
-
-      if (Array.isArray(game.team2) && game.team2.length > 0) {
-        const team2Players = game.team2.map(getPlayerName);
-        setTeam2Name(team2Players.join(' & '));
-      }
-    } catch (error) {
-      console.error('Erro ao carregar nomes dos jogadores:', error);
-    }
-  }, [game]);
-
-  if (!isOpen) return null;
+  const [selectedType, setSelectedType] = useState(null);
+  const [selectedWinner, setSelectedWinner] = useState(null);
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const resultType = resultTypes.find(t => t.id === selectedType);
+    if (!resultType || !selectedWinner) return;
+
     onSubmit({
       type: selectedType,
-      winningTeam: selectedType === 'draw' ? null : parseInt(winningTeam),
+      winningTeam: selectedWinner,
+      points: resultType.points,
+      team1Score: selectedWinner === 1 ? resultType.points : 0,
+      team2Score: selectedWinner === 2 ? resultType.points : 0
     });
   };
 
+  if (!isOpen) return null;
+
+  const team1Names = game.team1.map(playerId => {
+    const player = JSON.parse(localStorage.getItem('players') || '[]')
+      .find(p => p.id === playerId);
+    return player ? player.name : '';
+  }).join(' / ');
+
+  const team2Names = game.team2.map(playerId => {
+    const player = JSON.parse(localStorage.getItem('players') || '[]')
+      .find(p => p.id === playerId);
+    return player ? player.name : '';
+  }).join(' / ');
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full">
-        <h3 className="text-lg font-bold mb-4">Resultado da Partida</h3>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-w-lg w-full p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold">Resultado do Jogo</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-500"
+          >
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Tipo de Resultado */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tipo de Resultado
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Tipo de Batida
             </label>
-            <select
-              value={selectedType}
-              onChange={(e) => {
-                setSelectedType(e.target.value);
-                if (e.target.value === 'draw') {
-                  setWinningTeam(null);
-                }
-              }}
-              className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              required
-            >
-              <option value="">Selecione o tipo de resultado</option>
+            <div className="grid grid-cols-2 gap-2">
               {resultTypes.map((type) => (
-                <option key={type.id} value={type.id}>
-                  {type.label} ({type.points} {type.points === 1 ? 'ponto' : 'pontos'})
-                </option>
+                <button
+                  key={type.id}
+                  type="button"
+                  onClick={() => setSelectedType(type.id)}
+                  className={`p-2 rounded-lg border text-center transition-all ${
+                    selectedType === type.id
+                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="font-medium text-sm">{type.label}</div>
+                  <div className="text-xs text-blue-600 mt-1">
+                    {type.points} {type.points === 1 ? 'ponto' : 'pontos'}
+                  </div>
+                </button>
               ))}
-            </select>
+            </div>
           </div>
 
-          {selectedType && selectedType !== 'draw' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Dupla Vencedora
-              </label>
-              <div className="space-y-2">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="winningTeam"
-                    value="1"
-                    checked={winningTeam === 1}
-                    onChange={(e) => setWinningTeam(parseInt(e.target.value))}
-                    className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"
-                    required
-                  />
-                  <span className="ml-2">{team1Name}</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="winningTeam"
-                    value="2"
-                    checked={winningTeam === 2}
-                    onChange={(e) => setWinningTeam(parseInt(e.target.value))}
-                    className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"
-                    required
-                  />
-                  <span className="ml-2">{team2Name}</span>
-                </label>
-              </div>
+          {/* Seleção do Vencedor */}
+          <div className="space-y-3">
+            <label className="block text-sm font-medium text-gray-700">
+              Dupla Vencedora
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedWinner(1)}
+                className={`p-2 rounded-lg border text-center transition-all ${
+                  selectedWinner === 1
+                    ? 'border-green-500 bg-green-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <div className="font-medium text-sm truncate">{team1Names}</div>
+                {selectedWinner === 1 && (
+                  <div className="text-green-600 text-xs mt-1">
+                    Vencedor
+                  </div>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedWinner(2)}
+                className={`p-2 rounded-lg border text-center transition-all ${
+                  selectedWinner === 2
+                    ? 'border-green-500 bg-green-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <div className="font-medium text-sm truncate">{team2Names}</div>
+                {selectedWinner === 2 && (
+                  <div className="text-green-600 text-xs mt-1">
+                    Vencedor
+                  </div>
+                )}
+              </button>
             </div>
-          )}
+          </div>
 
-          <div className="flex justify-end space-x-3 mt-6">
+          {/* Botões de Ação */}
+          <div className="flex justify-end space-x-3 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              disabled={!selectedType || !selectedWinner}
+              className={`px-4 py-2 rounded-md text-white ${
+                !selectedType || !selectedWinner
+                  ? 'bg-gray-300 cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-700'
+              }`}
             >
-              Confirmar
+              Salvar Resultado
             </button>
           </div>
         </form>
