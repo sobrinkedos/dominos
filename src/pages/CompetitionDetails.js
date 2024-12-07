@@ -159,6 +159,62 @@ function CompetitionDetails() {
     return String(number).padStart(2, '0');
   };
 
+  const calculatePlayerStats = (playerId) => {
+    const playerGames = games.filter(game => 
+      game.team1Players?.includes(playerId) || 
+      game.team2Players?.includes(playerId)
+    );
+
+    const wins = playerGames.filter(game => {
+      const isTeam1 = game.team1Players?.includes(playerId);
+      return isTeam1 ? game.score1 > game.score2 : game.score2 > game.score1;
+    }).length;
+
+    return {
+      totalGames: playerGames.length,
+      wins: wins,
+      losses: playerGames.length - wins,
+      winRate: playerGames.length > 0 ? ((wins / playerGames.length) * 100).toFixed(1) : 0
+    };
+  };
+
+  const handleRemovePlayer = (playerId) => {
+    try {
+      // Verificar se o jogador está em algum jogo
+      const playerInGames = games.some(game => 
+        game.team1Players?.includes(playerId) || 
+        game.team2Players?.includes(playerId)
+      );
+
+      if (playerInGames) {
+        alert('Não é possível remover um jogador que já participou de jogos.');
+        return;
+      }
+
+      // Atualizar competição
+      const updatedCompetition = {
+        ...competition,
+        players: competition.players.filter(id => id !== playerId)
+      };
+
+      // Atualizar localStorage
+      const savedCompetitions = JSON.parse(localStorage.getItem('competitions') || '[]');
+      const updatedCompetitions = savedCompetitions.map(c =>
+        c.id === competition.id ? updatedCompetition : c
+      );
+      localStorage.setItem('competitions', JSON.stringify(updatedCompetitions));
+
+      // Atualizar estado
+      setCompetition(updatedCompetition);
+      const removedPlayer = players.find(p => p.id === playerId);
+      setPlayers(players.filter(p => p.id !== playerId));
+      setAvailablePlayers([...availablePlayers, removedPlayer]);
+    } catch (error) {
+      console.error('Erro ao remover jogador:', error);
+      alert('Erro ao remover jogador. Por favor, tente novamente.');
+    }
+  };
+
   if (!competition) {
     return <div>Carregando...</div>;
   }
@@ -247,7 +303,7 @@ function CompetitionDetails() {
               <div className="flex justify-end space-x-3">
                 <button
                   onClick={() => setIsAddingPlayer(false)}
-                  className="px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 >
                   Cancelar
                 </button>
@@ -268,96 +324,90 @@ function CompetitionDetails() {
         </div>
       )}
 
-      {/* Lista de Jogadores */}
-      <div className="bg-white shadow rounded-lg overflow-hidden mb-6">
-        <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">
-            Jogadores da Competição ({players.length})
-          </h3>
+      {/* Seção de Jogos */}
+      <div className="mt-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Jogos da Competição</h2>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            disabled={players.length < 4}
+            className={`px-4 py-2 rounded ${
+              players.length < 4
+                ? 'bg-gray-300 cursor-not-allowed'
+                : 'bg-blue-500 hover:bg-blue-600 text-white'
+            }`}
+          >
+            Novo Jogo
+          </button>
         </div>
-        <div className="border-t border-gray-200">
-          {players.length === 0 ? (
-            <div className="p-4 text-center text-gray-500">
-              Nenhum jogador adicionado ainda.
+        <div className="space-y-4">
+          {games.map((game) => (
+            <div
+              key={game.id}
+              onClick={() => navigate(`/games/${game.id}`)}
+              className="p-4 bg-white rounded-lg shadow cursor-pointer hover:shadow-md"
+            >
+              <div className="flex justify-between items-center">
+                <div className="text-lg font-semibold">
+                  Jogo #{game.id}
+                </div>
+                <div className="text-lg">
+                  {game.score1} x {game.score2}
+                </div>
+              </div>
             </div>
-          ) : (
-            <ul className="divide-y divide-gray-200">
-              {players.map((player) => (
-                <li key={player.id} className="px-4 py-3">
-                  {player.name}
-                </li>
-              ))}
-            </ul>
+          ))}
+          {games.length === 0 && (
+            <p className="text-gray-500 text-center py-4">
+              Nenhum jogo registrado ainda.
+            </p>
           )}
         </div>
       </div>
 
-      {/* Lista de Jogos */}
-      <div className="bg-white shadow rounded-lg overflow-hidden">
-        <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">
-            Jogos da Competição
-          </h3>
+      {/* Seção de Jogadores */}
+      <div className="mt-8">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Jogadores</h2>
+          <button
+            onClick={() => setIsAddingPlayer(true)}
+            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+          >
+            Adicionar Jogador
+          </button>
         </div>
-        <div className="border-t border-gray-200">
-          {games.length === 0 ? (
-            <div className="p-4 text-center text-gray-500">
-              Nenhum jogo registrado ainda.
-            </div>
-          ) : (
-            <ul className="divide-y divide-gray-200">
-              {games.map((game) => (
-                <li 
-                  key={game.id} 
-                  className="px-4 py-5 sm:px-6 hover:bg-gray-50 cursor-pointer"
-                  onClick={() => navigate(`/games/${game.id}`)}
-                >
-                  <div className="grid grid-cols-3 gap-4">
-                    {/* Time 1 */}
-                    <div className={`text-center ${game.winner === 1 ? 'font-bold' : ''}`}>
-                      <div className="space-y-1">
-                        <p>{getPlayerName(game.team1?.[0])}</p>
-                        <p>{getPlayerName(game.team1?.[1])}</p>
-                        <p className="text-2xl font-bold text-gray-900">{game.score1}</p>
-                      </div>
-                    </div>
-
-                    {/* VS */}
-                    <div className="flex items-center justify-center">
-                      <div className="text-center">
-                        <p className="text-sm text-gray-500">{formatDate(game.createdAt)}</p>
-                        <p className="text-lg font-bold text-gray-400">VS</p>
-                      </div>
-                    </div>
-
-                    {/* Time 2 */}
-                    <div className={`text-center ${game.winner === 2 ? 'font-bold' : ''}`}>
-                      <div className="space-y-1">
-                        <p>{getPlayerName(game.team2?.[0])}</p>
-                        <p>{getPlayerName(game.team2?.[1])}</p>
-                        <p className="text-2xl font-bold text-gray-900">{game.score2}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Indicador de Status */}
-                  <div className="mt-2 flex justify-center">
-                    {game.completed ? (
-                      <div className={`flex items-center space-x-1 text-sm ${
-                        game.winner === 1 ? 'text-blue-600' : 'text-green-600'
-                      }`}>
-                        <TrophyIcon className="h-4 w-4" />
-                        <span>Time {game.winner} venceu!</span>
-                      </div>
-                    ) : (
-                      <span className="text-sm text-yellow-600">
-                        Jogo em andamento
-                      </span>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {players.map((player) => {
+            const stats = calculatePlayerStats(player.id);
+            return (
+              <div key={player.id} className="bg-white p-4 rounded-lg shadow">
+                <div className="flex justify-between items-start">
+                  <h3 className="text-lg font-semibold">{player.name}</h3>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemovePlayer(player.id);
+                    }}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+                  <div className="text-gray-600">Jogos: {stats.totalGames}</div>
+                  <div className="text-gray-600">Vitórias: {stats.wins}</div>
+                  <div className="text-gray-600">Derrotas: {stats.losses}</div>
+                  <div className="text-gray-600">Taxa: {stats.winRate}%</div>
+                </div>
+              </div>
+            );
+          })}
+          {players.length === 0 && (
+            <p className="text-gray-500 text-center py-4 col-span-full">
+              Nenhum jogador adicionado ainda.
+            </p>
           )}
         </div>
       </div>
