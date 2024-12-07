@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 function GameForm({ players, onSubmit, onCancel, competitionId }) {
@@ -6,8 +6,45 @@ function GameForm({ players, onSubmit, onCancel, competitionId }) {
     team1: ['', ''],
     team2: ['', '']
   });
+  const [availablePlayers, setAvailablePlayers] = useState([]);
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Carregar jogadores do localStorage para garantir dados atualizados
+    const loadPlayers = () => {
+      try {
+        console.log('Carregando jogadores do localStorage');
+        const savedPlayers = JSON.parse(localStorage.getItem('players') || '[]');
+        console.log('Jogadores carregados:', savedPlayers);
+        
+        // Validar jogadores antes de definir no estado
+        const validPlayers = savedPlayers.filter(player => 
+          player && 
+          typeof player === 'object' && 
+          player.id && 
+          player.name
+        );
+
+        console.log('Jogadores válidos:', validPlayers);
+        setAvailablePlayers(validPlayers);
+      } catch (error) {
+        console.error('Erro ao carregar jogadores:', error);
+        setAvailablePlayers([]);
+      }
+    };
+
+    loadPlayers();
+
+    // Adicionar listener para atualização de jogadores
+    const handlePlayersUpdate = () => {
+      console.log('Evento de atualização de jogadores detectado');
+      loadPlayers();
+    };
+
+    window.addEventListener('playersUpdated', handlePlayersUpdate);
+    return () => window.removeEventListener('playersUpdated', handlePlayersUpdate);
+  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -55,22 +92,65 @@ function GameForm({ players, onSubmit, onCancel, competitionId }) {
   };
 
   const handleRandomTeams = () => {
-    // Filtrar jogadores que não estão em nenhum time
-    const availablePlayers = [...players];
-    
-    // Embaralhar array de jogadores
-    for (let i = availablePlayers.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [availablePlayers[i], availablePlayers[j]] = [availablePlayers[j], availablePlayers[i]];
+    try {
+      console.log('1. Iniciando sorteio de times');
+      console.log('1.1 Jogadores disponíveis:', availablePlayers);
+
+      // Verificar se há jogadores suficientes
+      if (!Array.isArray(availablePlayers)) {
+        console.error('Lista de jogadores não é um array');
+        alert('Erro ao carregar jogadores. Por favor, tente novamente.');
+        return;
+      }
+
+      // Filtrar jogadores válidos
+      const validPlayers = availablePlayers.filter(player => {
+        const isValid = player && typeof player === 'object' && player.id;
+        if (!isValid) {
+          console.log('Jogador inválido:', player);
+        }
+        return isValid;
+      });
+
+      console.log('2. Jogadores válidos:', validPlayers);
+
+      if (validPlayers.length < 4) {
+        console.error('Número insuficiente de jogadores válidos:', validPlayers.length);
+        alert('São necessários pelo menos 4 jogadores para sortear os times.');
+        return;
+      }
+
+      // Embaralhar array de jogadores
+      const shuffledPlayers = [...validPlayers];
+      for (let i = shuffledPlayers.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffledPlayers[i], shuffledPlayers[j]] = [shuffledPlayers[j], shuffledPlayers[i]];
+      }
+
+      console.log('3. Jogadores embaralhados:', shuffledPlayers);
+
+      // Selecionar 4 jogadores aleatórios
+      const selectedPlayers = shuffledPlayers.slice(0, 4);
+      console.log('4. Jogadores selecionados:', selectedPlayers);
+
+      // Verificar IDs antes de usar
+      if (!selectedPlayers.every(player => player && player.id)) {
+        console.error('Jogador selecionado sem ID:', selectedPlayers);
+        alert('Erro ao selecionar jogadores. Por favor, tente novamente.');
+        return;
+      }
+
+      const newTeams = {
+        team1: [selectedPlayers[0].id, selectedPlayers[1].id],
+        team2: [selectedPlayers[2].id, selectedPlayers[3].id]
+      };
+
+      console.log('5. Times formados:', newTeams);
+      setFormData(newTeams);
+    } catch (error) {
+      console.error('Erro ao sortear times:', error);
+      alert('Ocorreu um erro ao sortear os times. Por favor, tente novamente.');
     }
-
-    // Selecionar 4 jogadores aleatórios
-    const selectedPlayers = availablePlayers.slice(0, 4);
-
-    setFormData({
-      team1: [selectedPlayers[0].id, selectedPlayers[1].id],
-      team2: [selectedPlayers[2].id, selectedPlayers[3].id]
-    });
   };
 
   return (
@@ -101,15 +181,8 @@ function GameForm({ players, onSubmit, onCancel, competitionId }) {
                 required
               >
                 <option value="">Selecione um jogador</option>
-                {players.map((player) => (
-                  <option
-                    key={player.id}
-                    value={player.id}
-                    disabled={
-                      formData.team1.includes(player.id) ||
-                      formData.team2.includes(player.id)
-                    }
-                  >
+                {availablePlayers.map((player) => (
+                  <option key={player.id} value={player.id}>
                     {player.name}
                   </option>
                 ))}
@@ -135,15 +208,8 @@ function GameForm({ players, onSubmit, onCancel, competitionId }) {
                 required
               >
                 <option value="">Selecione um jogador</option>
-                {players.map((player) => (
-                  <option
-                    key={player.id}
-                    value={player.id}
-                    disabled={
-                      formData.team1.includes(player.id) ||
-                      formData.team2.includes(player.id)
-                    }
-                  >
+                {availablePlayers.map((player) => (
+                  <option key={player.id} value={player.id}>
                     {player.name}
                   </option>
                 ))}
@@ -164,7 +230,7 @@ function GameForm({ players, onSubmit, onCancel, competitionId }) {
         </button>
         <button
           type="submit"
-          className="px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
           Criar Jogo
         </button>

@@ -2,6 +2,9 @@ import React from 'react';
 import GameForm from './GameForm';
 
 function GameModal({ isOpen, onClose, players, onSubmit, competitionId }) {
+  // Validar props
+  const validPlayers = Array.isArray(players) ? players : [];
+  
   if (!isOpen) return null;
 
   return (
@@ -20,7 +23,7 @@ function GameModal({ isOpen, onClose, players, onSubmit, competitionId }) {
           </button>
         </div>
         <GameForm
-          players={players}
+          players={validPlayers}
           competitionId={competitionId}
           onSubmit={(gameData) => {
             onSubmit(gameData);
