@@ -48,6 +48,8 @@ function CompetitionDetails() {
 
         // Filtrar jogos desta competição
         const competitionGames = savedGames.filter(g => g.competitionId === parseInt(id));
+        console.log('Estrutura dos jogos:', competitionGames);
+        
         const gamesWithScores = competitionGames.map(game => ({
           ...game,
           score1: game.matches?.reduce((sum, match) => sum + (match?.team1Score || 0), 0) || 0,
@@ -140,8 +142,17 @@ function CompetitionDetails() {
     setGames(prevGames => [...prevGames, { ...newGame, score1: 0, score2: 0 }]);
   };
 
+  // Função para obter o nome do jogador pelo ID
   const getPlayerName = (playerId) => {
-    return players.find(p => p.id === playerId)?.name || 'Jogador não encontrado';
+    if (!playerId) return '';
+    const player = players.find(p => p.id === parseInt(playerId));
+    return player ? player.name : '';
+  };
+
+  // Função para formatar os nomes da dupla
+  const getTeamNames = (team) => {
+    if (!team || !Array.isArray(team)) return '';
+    return team.map(playerId => getPlayerName(playerId)).filter(name => name).join(' / ');
   };
 
   const formatDate = (dateString) => {
@@ -341,19 +352,42 @@ function CompetitionDetails() {
           </button>
         </div>
         <div className="space-y-4">
-          {games.map((game) => (
+          {games.map((game, index) => (
             <div
               key={game.id}
               onClick={() => navigate(`/games/${game.id}`)}
               className="p-4 bg-white rounded-lg shadow cursor-pointer hover:shadow-md"
             >
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center mb-2">
                 <div className="text-lg font-semibold">
-                  Jogo #{game.id}
+                  Jogo #{index + 1}
                 </div>
-                <div className="text-lg">
+                <div className="text-lg font-bold">
                   {game.score1} x {game.score2}
                 </div>
+              </div>
+              <div className="grid grid-cols-3 text-sm">
+                <div className={`text-center ${game.score1 > game.score2 ? 'font-bold text-green-600' : ''}`}>
+                  {getTeamNames(game.team1)}
+                </div>
+                <div className="text-center text-gray-500 flex items-center justify-center">
+                  <span className="bg-gray-100 px-2 py-1 rounded">vs</span>
+                </div>
+                <div className={`text-center ${game.score2 > game.score1 ? 'font-bold text-green-600' : ''}`}>
+                  {getTeamNames(game.team2)}
+                </div>
+              </div>
+              <div className="mt-2 text-center text-sm">
+                {game.score1 !== game.score2 && (
+                  <span className="text-green-600">
+                    Vencedor: {game.score1 > game.score2 ? getTeamNames(game.team1) : getTeamNames(game.team2)}
+                  </span>
+                )}
+                {game.score1 === game.score2 && (
+                  <span className="text-yellow-600">
+                    Jogo empatado
+                  </span>
+                )}
               </div>
             </div>
           ))}
