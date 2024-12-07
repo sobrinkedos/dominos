@@ -8,6 +8,7 @@ import Players from './pages/Players';
 import Statistics from './pages/Statistics';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import GameDetails from './pages/GameDetails';
 
 function PrivateRoute({ children }) {
   const { user } = useAuth();
@@ -125,6 +126,8 @@ function AppContent() {
       <main className="max-w-6xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
             <Route
               path="/"
               element={
@@ -146,6 +149,14 @@ function AppContent() {
               element={
                 <PrivateRoute>
                   <CompetitionDetails />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/games/:id"
+              element={
+                <PrivateRoute>
+                  <GameDetails />
                 </PrivateRoute>
               }
             />

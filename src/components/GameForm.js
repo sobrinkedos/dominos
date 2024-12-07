@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-function GameForm({ players, onSubmit, onCancel }) {
+function GameForm({ players, onSubmit, onCancel, competitionId, selectedTeam1, selectedTeam2 }) {
   const [formData, setFormData] = useState({
     team1: ['', ''],
     team2: ['', ''],
@@ -9,14 +10,33 @@ function GameForm({ players, onSubmit, onCancel }) {
     winner: null
   });
 
+  const navigate = useNavigate();
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    const gameData = {
-      ...formData,
-      date: new Date().toISOString(),
-      winner: formData.score1 > formData.score2 ? 1 : 2
+    const newGame = {
+      id: Date.now().toString(),
+      competitionId,
+      team1: selectedTeam1,
+      team2: selectedTeam2,
+      matches: [{
+        id: Date.now(),
+        number: 1,
+        result: null,
+        team1Score: 0,
+        team2Score: 0,
+        completed: false
+      }],
+      createdAt: new Date().toISOString()
     };
-    onSubmit(gameData);
+
+    // Salvar o novo jogo
+    const games = JSON.parse(localStorage.getItem('games') || '[]');
+    games.push(newGame);
+    localStorage.setItem('games', JSON.stringify(games));
+
+    onSubmit(newGame);
+    navigate(`/games/${newGame.id}`);
   };
 
   const handlePlayerSelect = (team, position, playerId) => {

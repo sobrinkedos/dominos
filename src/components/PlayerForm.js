@@ -5,22 +5,41 @@ function PlayerForm({ onSubmit, onCancel, initialData }) {
   const [nickname, setNickname] = useState(initialData?.nickname || '');
   const [phone, setPhone] = useState(initialData?.phone || '');
 
+  const formatPhoneNumber = (value) => {
+    // Remove tudo que não for número
+    const numbers = value.replace(/\D/g, '');
+    
+    // Aplica a máscara (XX) XXXXX-XXXX
+    if (numbers.length <= 11) {
+      let formatted = numbers;
+      if (numbers.length > 2) {
+        formatted = `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+      }
+      if (numbers.length > 7) {
+        formatted = `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
+      }
+      return formatted;
+    }
+    return value;
+  };
+
   const handlePhoneChange = (e) => {
-    // Remove qualquer caractere que não seja número
-    const value = e.target.value.replace(/\D/g, '');
-    // Limita a 11 dígitos (DDD + 9 dígitos)
-    if (value.length <= 11) {
-      setPhone(value);
+    const value = e.target.value;
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 11) {
+      setPhone(formatPhoneNumber(value));
     }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    // Remove a formatação do telefone antes de salvar
+    const cleanPhone = phone.replace(/\D/g, '');
     onSubmit({
       id: initialData?.id || Date.now(),
       name,
       nickname,
-      phone
+      phone: cleanPhone
     });
   };
 
@@ -62,12 +81,11 @@ function PlayerForm({ onSubmit, onCancel, initialData }) {
           id="phone"
           value={phone}
           onChange={handlePhoneChange}
-          maxLength="11"
-          placeholder="DDD + Número (apenas números)"
+          placeholder="(00) 00000-0000"
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
         />
         <p className="mt-1 text-sm text-gray-500">
-          Digite apenas números: DDD + número (máximo 11 dígitos)
+          Formato: (00) 00000-0000
         </p>
       </div>
 
