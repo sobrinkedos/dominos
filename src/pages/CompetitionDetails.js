@@ -36,13 +36,15 @@ function CompetitionDetails() {
         setCompetition(comp);
         
         // Filtrar jogadores que já estão na competição
-        const competitionPlayerIds = new Set(comp.players);
-        const availablePlayers = savedPlayers.filter(p => !competitionPlayerIds.has(p.id));
-        setAvailablePlayers(availablePlayers);
+        const competitionPlayerIds = new Set(comp.players || []);
         
         // Carregar detalhes dos jogadores da competição
         const competitionPlayers = savedPlayers.filter(p => competitionPlayerIds.has(p.id));
         setPlayers(competitionPlayers);
+
+        // Filtrar jogadores disponíveis (que não estão na competição)
+        const availablePlayers = savedPlayers.filter(p => !competitionPlayerIds.has(p.id));
+        setAvailablePlayers(availablePlayers);
 
         // Filtrar jogos desta competição
         const competitionGames = savedGames.filter(g => g.competitionId === parseInt(id));
@@ -65,10 +67,17 @@ function CompetitionDetails() {
     if (!selectedPlayer) return;
 
     try {
+      // Encontrar o jogador selecionado
+      const playerToAdd = availablePlayers.find(p => p.id === parseInt(selectedPlayer));
+      if (!playerToAdd) {
+        console.error('Jogador não encontrado:', selectedPlayer);
+        return;
+      }
+
       // Atualizar competição no estado
       const updatedCompetition = {
         ...competition,
-        players: [...(competition.players || []), selectedPlayer]
+        players: [...(competition.players || []), parseInt(selectedPlayer)]
       };
       setCompetition(updatedCompetition);
 
@@ -80,9 +89,8 @@ function CompetitionDetails() {
       localStorage.setItem('competitions', JSON.stringify(updatedCompetitions));
 
       // Atualizar listas de jogadores
-      const playerToAdd = availablePlayers.find(p => p.id === selectedPlayer);
       setPlayers(prev => [...prev, playerToAdd]);
-      setAvailablePlayers(prev => prev.filter(p => p.id !== selectedPlayer));
+      setAvailablePlayers(prev => prev.filter(p => p.id !== parseInt(selectedPlayer)));
 
       // Resetar estado
       setSelectedPlayer('');
