@@ -15,7 +15,7 @@ function GameForm({ players, onSubmit, onCancel, competitionId, selectedTeam1, s
   const handleSubmit = (e) => {
     e.preventDefault();
     const newGame = {
-      id: Date.now().toString(),
+      id: Date.now(),
       competitionId,
       team1: selectedTeam1,
       team2: selectedTeam2,

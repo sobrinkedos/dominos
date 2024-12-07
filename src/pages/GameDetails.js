@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import GameResultModal from '../components/GameResultModal';
 
@@ -11,29 +11,50 @@ function GameDetails() {
   const [animatedScore1, setAnimatedScore1] = useState(0);
   const [animatedScore2, setAnimatedScore2] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Carregar dados do jogo do localStorage
-    const games = JSON.parse(localStorage.getItem('games') || '[]');
-    const foundGame = games.find(g => g.id === id);
-    
-    if (foundGame) {
-      // Se não houver partidas, criar a primeira
-      if (!foundGame.matches || foundGame.matches.length === 0) {
-        foundGame.matches = [{
-          id: Date.now(),
-          number: 1,
-          result: null,
-          team1Score: 0,
-          team2Score: 0,
-          completed: false
-        }];
+    const loadGame = () => {
+      try {
+        const games = JSON.parse(localStorage.getItem('games')) || [];
+        // Converter id para número para garantir a comparação correta
+        const gameId = parseInt(id);
+        console.log('Procurando jogo com ID:', gameId);
+        console.log('Jogos disponíveis:', games);
+        
+        const foundGame = games.find(g => g.id === gameId);
+        console.log('Jogo encontrado:', foundGame);
+        
+        if (foundGame) {
+          // Se não houver partidas, criar a primeira
+          if (!foundGame.matches || foundGame.matches.length === 0) {
+            foundGame.matches = [{
+              id: Date.now(),
+              number: 1,
+              result: null,
+              team1Score: 0,
+              team2Score: 0,
+              completed: false
+            }];
+            
+            // Atualizar o localStorage com a nova partida
+            localStorage.setItem('games', JSON.stringify(games));
+          }
+
+          setGame(foundGame);
+          
+          // Define a partida atual como a última partida não completada
+          const currentMatch = foundGame.matches.find(m => !m.completed);
+          setCurrentMatch(currentMatch);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar o jogo:', error);
+      } finally {
+        setIsLoading(false);
       }
-      setGame(foundGame);
-      // Define a partida atual como a última partida não completada
-      const currentMatch = foundGame.matches.find(m => !m.completed);
-      setCurrentMatch(currentMatch);
-    }
+    };
+
+    loadGame();
   }, [id]);
 
   useEffect(() => {
@@ -72,6 +93,14 @@ function GameDetails() {
 
     animate();
   }, [game?.matches, animatedScore1, animatedScore2]);
+
+  const { team1Name, team2Name, totalScore1, totalScore2, matchCount } = useMemo(() => ({
+    team1Name: game?.team1?.join(' & ') || 'Time 1',
+    team2Name: game?.team2?.join(' & ') || 'Time 2',
+    totalScore1: game?.matches?.reduce((sum, match) => sum + (match?.team1Score || 0), 0) || 0,
+    totalScore2: game?.matches?.reduce((sum, match) => sum + (match?.team2Score || 0), 0) || 0,
+    matchCount: game?.matches?.length || 0
+  }), [game]);
 
   const handleResultSubmit = (result) => {
     if (!game || !currentMatch) return;
@@ -169,14 +198,21 @@ function GameDetails() {
     setIsResultModalOpen(false);
   };
 
-  if (!game) {
-    return <div className="p-4">Carregando...</div>;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
 
-  // Verificações de segurança para os dados do jogo
-  const team1Name = game?.team1?.join(' & ') || 'Time 1';
-  const team2Name = game?.team2?.join(' & ') || 'Time 2';
-  const matchCount = game?.matches?.length || 0;
+  if (!game) {
+    return (
+      <div className="p-4 text-center">
+        <p className="text-gray-600">Jogo não encontrado</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

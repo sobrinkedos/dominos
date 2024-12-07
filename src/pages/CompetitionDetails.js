@@ -131,44 +131,44 @@ function CompetitionDetails() {
         </div>
         <div className="border-t border-gray-200">
           <ul className="divide-y divide-gray-200">
-            {games.map((game) => (
-              <li key={game.id} className="px-4 py-5 sm:px-6">
+            {games?.map((game) => (
+              <li key={game?.id} className="px-4 py-5 sm:px-6">
                 <div className="grid grid-cols-3 gap-4">
                   {/* Time 1 */}
-                  <div className={`text-center ${game.winner === 1 ? 'font-bold' : ''}`}>
+                  <div className={`text-center ${game?.winner === 1 ? 'font-bold' : ''}`}>
                     <div className="space-y-1">
-                      <p>{getPlayerName(game.team1[0])}</p>
-                      <p>{getPlayerName(game.team1[1])}</p>
-                      <p className="text-2xl font-bold text-gray-900">{game.score1}</p>
+                      <p>{getPlayerName(game?.team1?.[0] || '')}</p>
+                      <p>{getPlayerName(game?.team1?.[1] || '')}</p>
+                      <p className="text-2xl font-bold text-gray-900">{game?.score1 || 0}</p>
                     </div>
                   </div>
 
                   {/* VS */}
                   <div className="flex items-center justify-center">
                     <div className="text-center">
-                      <p className="text-sm text-gray-500">{formatDate(game.date)}</p>
+                      <p className="text-sm text-gray-500">{formatDate(game?.date || '')}</p>
                       <p className="text-lg font-bold text-gray-400">VS</p>
                     </div>
                   </div>
 
                   {/* Time 2 */}
-                  <div className={`text-center ${game.winner === 2 ? 'font-bold' : ''}`}>
+                  <div className={`text-center ${game?.winner === 2 ? 'font-bold' : ''}`}>
                     <div className="space-y-1">
-                      <p>{getPlayerName(game.team2[0])}</p>
-                      <p>{getPlayerName(game.team2[1])}</p>
-                      <p className="text-2xl font-bold text-gray-900">{game.score2}</p>
+                      <p>{getPlayerName(game?.team2?.[0] || '')}</p>
+                      <p>{getPlayerName(game?.team2?.[1] || '')}</p>
+                      <p className="text-2xl font-bold text-gray-900">{game?.score2 || 0}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Indicador de Vencedor */}
                 <div className="mt-2 flex justify-center">
-                  {game.winner && (
+                  {game?.winner && (
                     <div className={`flex items-center space-x-1 text-sm ${
-                      game.winner === 1 ? 'text-blue-600' : 'text-green-600'
+                      game?.winner === 1 ? 'text-blue-600' : 'text-green-600'
                     }`}>
                       <TrophyIcon className="h-4 w-4" />
-                      <span>Time {game.winner} venceu!</span>
+                      <span>Time {game?.winner} venceu!</span>
                     </div>
                   )}
                 </div>
