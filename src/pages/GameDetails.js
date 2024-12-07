@@ -2,6 +2,14 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import GameResultModal from '../components/GameResultModal';
 
+const resultTypes = [
+  { id: 'simple', points: 1 },
+  { id: 'carroca', points: 2 },
+  { id: 'la-e-lo', points: 3 },
+  { id: 'cruzada', points: 4 },
+  { id: 'draw', points: 0 },
+];
+
 function GameDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -105,96 +113,76 @@ function GameDetails() {
   const handleResultSubmit = (result) => {
     if (!game || !currentMatch) return;
 
-    const games = JSON.parse(localStorage.getItem('games') || '[]');
-    const gameIndex = games.findIndex(g => g.id === id);
+    const games = JSON.parse(localStorage.getItem('games')) || [];
+    const gameIndex = games.findIndex(g => g.id === game.id);
     
     if (gameIndex === -1) return;
 
-    // Atualizar o resultado da partida atual
-    const updatedGame = { ...game };
-    const matchIndex = updatedGame.matches.findIndex(m => m.id === currentMatch.id);
-    
-    if (matchIndex === -1) return;
+    // Encontrar o tipo de resultado para saber a pontuação
+    const resultType = resultTypes.find(type => type.id === result.type);
+    const points = resultType?.points || 0;
 
-    // Calcular pontuação baseada no tipo de resultado
-    let points = 0;
-    let extraPoint = false;
-    
-    switch (result.type) {
-      case 'simple':
-        points = 1;
-        break;
-      case 'carroca':
-        points = 2;
-        break;
-      case 'la-e-lo':
-        points = 3;
-        break;
-      case 'cruzada':
-        points = 4;
-        break;
-      case 'draw':
-        points = 0;
-        extraPoint = true;
-        break;
-      default:
-        points = 0;
-    }
+    // Atualizar a partida atual com o resultado
+    const updatedMatch = {
+      ...currentMatch,
+      completed: true,
+      result: {
+        type: result.type,
+        winningTeam: result.winningTeam,
+        points: points
+      },
+      team1Score: result.winningTeam === 1 ? points : 0,
+      team2Score: result.winningTeam === 2 ? points : 0
+    };
 
-    // Atualizar pontuação
-    if (result.winningTeam === 1) {
-      updatedGame.matches[matchIndex].team1Score = points;
-      updatedGame.matches[matchIndex].team2Score = 0;
-    } else if (result.winningTeam === 2) {
-      updatedGame.matches[matchIndex].team1Score = 0;
-      updatedGame.matches[matchIndex].team2Score = points;
-    } else {
-      updatedGame.matches[matchIndex].team1Score = 0;
-      updatedGame.matches[matchIndex].team2Score = 0;
-    }
+    // Calcular pontuação total após esta partida
+    const totalScore1 = game.matches.reduce(
+      (sum, match) => sum + (match.team1Score || 0), 
+      0
+    ) + (result.winningTeam === 1 ? points : 0);
 
-    updatedGame.matches[matchIndex].result = result;
-    updatedGame.matches[matchIndex].completed = true;
+    const totalScore2 = game.matches.reduce(
+      (sum, match) => sum + (match.team2Score || 0),
+      0
+    ) + (result.winningTeam === 2 ? points : 0);
 
-    // Se houver ponto extra da partida anterior e não for empate
-    if (game.matches[matchIndex - 1]?.result?.type === 'draw' && result.winningTeam) {
-      if (result.winningTeam === 1) {
-        updatedGame.matches[matchIndex].team1Score += 1;
-      } else {
-        updatedGame.matches[matchIndex].team2Score += 1;
-      }
-    }
+    // Atualizar o jogo
+    const updatedGame = {
+      ...game,
+      matches: game.matches.map(match =>
+        match.id === currentMatch.id ? updatedMatch : match
+      )
+    };
 
-    // Calcular pontuação total
-    const totalScore1 = updatedGame.matches.reduce((sum, match) => sum + match.team1Score, 0);
-    const totalScore2 = updatedGame.matches.reduce((sum, match) => sum + match.team2Score, 0);
-
-    // Verificar se o jogo deve ser encerrado (6 pontos ou mais)
+    // Verificar se alguma equipe atingiu 6 pontos
     if (totalScore1 >= 6 || totalScore2 >= 6) {
+      // Encerrar o jogo
       updatedGame.completed = true;
-      updatedGame.winner = totalScore1 > totalScore2 ? 1 : 2;
+      updatedGame.winner = totalScore1 >= 6 ? 1 : 2;
       updatedGame.finalScore = {
         team1: totalScore1,
         team2: totalScore2
       };
-    } else if (updatedGame.matches.length < 6) {
-      // Criar próxima partida se o jogo não acabou
-      updatedGame.matches.push({
+    } else {
+      // Criar nova partida
+      const newMatch = {
         id: Date.now(),
-        number: updatedGame.matches.length + 1,
+        number: game.matches.length + 1,
         result: null,
         team1Score: 0,
         team2Score: 0,
         completed: false
-      });
+      };
+      updatedGame.matches.push(newMatch);
     }
 
-    // Atualizar o jogo no localStorage
+    // Atualizar no localStorage
     games[gameIndex] = updatedGame;
     localStorage.setItem('games', JSON.stringify(games));
-    
+
+    // Atualizar estado
     setGame(updatedGame);
-    setCurrentMatch(updatedGame.matches.find(m => !m.completed));
+    setCurrentMatch(updatedGame.completed ? null : updatedGame.matches[updatedGame.matches.length - 1]);
     setIsResultModalOpen(false);
   };
 
