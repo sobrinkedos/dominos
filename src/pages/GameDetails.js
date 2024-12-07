@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import GameResultModal from '../components/GameResultModal';
 
@@ -38,25 +38,9 @@ function GameDetails() {
     }
   };
 
-  // Calcular os nomes das equipes e informações do jogo
-  const { team1Name, team2Name, totalScore1, totalScore2 } = useMemo(() => {
-    if (!game) return { 
-      team1Name: 'Time 1', 
-      team2Name: 'Time 2',
-      totalScore1: 0,
-      totalScore2: 0
-    };
-
-    const team1Players = game.team1?.map(getPlayerName) || ['Time 1'];
-    const team2Players = game.team2?.map(getPlayerName) || ['Time 2'];
-
-    return {
-      team1Name: team1Players.join(' & '),
-      team2Name: team2Players.join(' & '),
-      totalScore1: game.matches?.reduce((sum, match) => sum + (match?.team1Score || 0), 0) || 0,
-      totalScore2: game.matches?.reduce((sum, match) => sum + (match?.team2Score || 0), 0) || 0
-    };
-  }, [game]);
+  // Calcular os nomes das equipes
+  const team1Name = game?.team1?.map(getPlayerName)?.join(' & ') || 'Time 1';
+  const team2Name = game?.team2?.map(getPlayerName)?.join(' & ') || 'Time 2';
 
   useEffect(() => {
     const loadGame = () => {
@@ -111,6 +95,9 @@ function GameDetails() {
   useEffect(() => {
     if (!game) return;
 
+    const currentScore1 = game.matches?.reduce((sum, match) => sum + (match?.team1Score || 0), 0) || 0;
+    const currentScore2 = game.matches?.reduce((sum, match) => sum + (match?.team2Score || 0), 0) || 0;
+
     // Animar os pontos com verificações de segurança
     setIsAnimating(true);
     let frame = 0;
@@ -123,8 +110,8 @@ function GameDetails() {
       const progress = frame / totalFrames;
       const easeProgress = 1 - Math.pow(1 - progress, 2);
       
-      setAnimatedScore1(Math.round(startScore1 + (totalScore1 - startScore1) * easeProgress));
-      setAnimatedScore2(Math.round(startScore2 + (totalScore2 - startScore2) * easeProgress));
+      setAnimatedScore1(Math.round(startScore1 + (currentScore1 - startScore1) * easeProgress));
+      setAnimatedScore2(Math.round(startScore2 + (currentScore2 - startScore2) * easeProgress));
 
       if (frame < totalFrames) {
         requestAnimationFrame(animate);
@@ -134,7 +121,7 @@ function GameDetails() {
     };
 
     animate();
-  }, [game?.matches, animatedScore1, animatedScore2, totalScore1, totalScore2]);
+  }, [game?.matches, animatedScore1, animatedScore2]);
 
   const handleResultSubmit = (result) => {
     if (!game || !currentMatch) return;
@@ -260,7 +247,7 @@ function GameDetails() {
         ) : (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
             <p className="text-blue-700">
-              Jogo em andamento - Partida {formatGameNumber(game.matches.length || 0)} de no máximo 6
+              Jogo em andamento - Partida {formatGameNumber(game?.matches?.length || 0)} de no máximo 6
             </p>
           </div>
         )}
