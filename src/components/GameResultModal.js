@@ -12,13 +12,17 @@ function GameResultModal({ isOpen, onClose, onSubmit, game }) {
   const [selectedType, setSelectedType] = useState('');
   const [winningTeam, setWinningTeam] = useState(null);
 
-  if (!isOpen) return null;
+  if (!isOpen || !game) return null;
+
+  // Preparar nomes das equipes com verificação de segurança
+  const team1Name = game?.team1?.join(' & ') || 'Time 1';
+  const team2Name = game?.team2?.join(' & ') || 'Time 2';
 
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit({
       type: selectedType,
-      winningTeam: selectedType === 'draw' ? null : winningTeam,
+      winningTeam: selectedType === 'draw' ? null : parseInt(winningTeam),
     });
     setSelectedType('');
     setWinningTeam(null);
@@ -65,11 +69,11 @@ function GameResultModal({ isOpen, onClose, onSubmit, game }) {
                     name="winningTeam"
                     value="1"
                     checked={winningTeam === 1}
-                    onChange={() => setWinningTeam(1)}
+                    onChange={(e) => setWinningTeam(parseInt(e.target.value))}
                     className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"
                     required
                   />
-                  <span className="ml-2">{game.team1.join(' & ')}</span>
+                  <span className="ml-2">{team1Name}</span>
                 </label>
                 <label className="flex items-center">
                   <input
@@ -77,11 +81,11 @@ function GameResultModal({ isOpen, onClose, onSubmit, game }) {
                     name="winningTeam"
                     value="2"
                     checked={winningTeam === 2}
-                    onChange={() => setWinningTeam(2)}
+                    onChange={(e) => setWinningTeam(parseInt(e.target.value))}
                     className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"
                     required
                   />
-                  <span className="ml-2">{game.team2.join(' & ')}</span>
+                  <span className="ml-2">{team2Name}</span>
                 </label>
               </div>
             </div>
