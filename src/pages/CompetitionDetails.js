@@ -12,34 +12,101 @@ function CompetitionDetails() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    const savedCompetitions = JSON.parse(localStorage.getItem('competitions') || '[]');
-    const savedPlayers = JSON.parse(localStorage.getItem('players') || '[]');
-    const savedGames = JSON.parse(localStorage.getItem('games') || '[]');
-    
-    const comp = savedCompetitions.find(c => c.id === parseInt(id));
-    if (!comp) {
-      navigate('/competitions');
-      return;
-    }
+    const loadData = () => {
+      try {
+        const savedCompetitions = JSON.parse(localStorage.getItem('competitions') || '[]');
+        const savedPlayers = JSON.parse(localStorage.getItem('players') || '[]');
+        const savedGames = JSON.parse(localStorage.getItem('games') || '[]');
+        
+        console.log('ID da competição:', id);
+        console.log('Jogos salvos:', savedGames);
+        
+        const comp = savedCompetitions.find(c => c.id === parseInt(id));
+        if (!comp) {
+          console.log('Competição não encontrada');
+          navigate('/competitions');
+          return;
+        }
 
-    setCompetition(comp);
-    setPlayers(savedPlayers);
-    setGames(savedGames.filter(g => g.competitionId === parseInt(id)));
+        setCompetition(comp);
+        setPlayers(savedPlayers);
+
+        // Filtrar jogos desta competição e calcular pontuações
+        const competitionGames = savedGames.filter(g => {
+          console.log('Comparando:', g.competitionId, parseInt(id));
+          return g.competitionId === parseInt(id);
+        });
+        
+        console.log('Jogos da competição:', competitionGames);
+
+        const gamesWithScores = competitionGames.map(game => {
+          const matches = game.matches || [];
+          const totalScore1 = matches.reduce((sum, match) => sum + (match?.team1Score || 0), 0);
+          const totalScore2 = matches.reduce((sum, match) => sum + (match?.team2Score || 0), 0);
+          
+          return {
+            ...game,
+            score1: totalScore1,
+            score2: totalScore2,
+            winner: game.winner || (totalScore1 >= 6 ? 1 : totalScore2 >= 6 ? 2 : null)
+          };
+        });
+
+        console.log('Jogos com pontuação:', gamesWithScores);
+        setGames(gamesWithScores);
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+      }
+    };
+
+    loadData();
+
+    // Adicionar event listeners para mudanças
+    const handleStorageChange = (e) => {
+      if (e.key === 'games' || e.key === null) {
+        console.log('Storage mudou, recarregando dados');
+        loadData();
+      }
+    };
+
+    const handleGamesUpdated = () => {
+      console.log('Evento gamesUpdated recebido, recarregando dados');
+      loadData();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('gamesUpdated', handleGamesUpdated);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('gamesUpdated', handleGamesUpdated);
+    };
   }, [id, navigate]);
 
+  // Função para atualizar os dados quando um novo jogo é adicionado
   const handleAddGame = (gameData) => {
     const newGame = {
       id: Date.now(),
       competitionId: parseInt(id),
-      ...gameData
+      ...gameData,
+      matches: [{
+        id: Date.now(),
+        number: 1,
+        result: null,
+        team1Score: 0,
+        team2Score: 0,
+        completed: false
+      }]
     };
-
-    const updatedGames = [...games, newGame];
-    setGames(updatedGames);
 
     // Atualizar localStorage
     const allGames = JSON.parse(localStorage.getItem('games') || '[]');
-    localStorage.setItem('games', JSON.stringify([...allGames, newGame]));
+    const updatedAllGames = [...allGames, newGame];
+    localStorage.setItem('games', JSON.stringify(updatedAllGames));
+
+    // Atualizar estado local
+    setGames(prevGames => [...prevGames, { ...newGame, score1: 0, score2: 0 }]);
   };
 
   const handleStartCompetition = () => {
@@ -106,88 +173,83 @@ function CompetitionDetails() {
         </div>
       </div>
 
-      {/* Informações da Competição */}
-      <div className="bg-white shadow rounded-lg p-6">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <h3 className="text-sm font-medium text-gray-500">Data</h3>
-            <p className="mt-1 text-lg text-gray-900">{formatDate(competition.date)}</p>
-          </div>
-          <div>
-            <h3 className="text-sm font-medium text-gray-500">Status</h3>
-            <p className="mt-1 text-lg text-gray-900">{
-              competition.status === 'pending' ? 'Pendente' :
-              competition.status === 'in_progress' ? 'Em Andamento' :
-              'Finalizada'
-            }</p>
-          </div>
-        </div>
-      </div>
-
       {/* Lista de Jogos */}
       <div className="bg-white shadow rounded-lg overflow-hidden">
-        <div className="px-4 py-5 sm:px-6">
-          <h2 className="text-lg font-medium text-gray-900">Jogos</h2>
+        <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900">
+            Jogos da Competição
+          </h3>
         </div>
         <div className="border-t border-gray-200">
-          <ul className="divide-y divide-gray-200">
-            {games?.map((game) => (
-              <li key={game?.id} className="px-4 py-5 sm:px-6">
-                <div className="grid grid-cols-3 gap-4">
-                  {/* Time 1 */}
-                  <div className={`text-center ${game?.winner === 1 ? 'font-bold' : ''}`}>
-                    <div className="space-y-1">
-                      <p>{getPlayerName(game?.team1?.[0] || '')}</p>
-                      <p>{getPlayerName(game?.team1?.[1] || '')}</p>
-                      <p className="text-2xl font-bold text-gray-900">{game?.score1 || 0}</p>
+          {games.length === 0 ? (
+            <div className="p-4 text-center text-gray-500">
+              Nenhum jogo registrado ainda.
+            </div>
+          ) : (
+            <ul className="divide-y divide-gray-200">
+              {games.map((game) => (
+                <li 
+                  key={game.id} 
+                  className="px-4 py-5 sm:px-6 hover:bg-gray-50 cursor-pointer"
+                  onClick={() => navigate(`/games/${game.id}`)}
+                >
+                  <div className="grid grid-cols-3 gap-4">
+                    {/* Time 1 */}
+                    <div className={`text-center ${game.winner === 1 ? 'font-bold' : ''}`}>
+                      <div className="space-y-1">
+                        <p>{getPlayerName(game.team1?.[0])}</p>
+                        <p>{getPlayerName(game.team1?.[1])}</p>
+                        <p className="text-2xl font-bold text-gray-900">{game.score1}</p>
+                      </div>
+                    </div>
+
+                    {/* VS */}
+                    <div className="flex items-center justify-center">
+                      <div className="text-center">
+                        <p className="text-sm text-gray-500">{formatDate(game.createdAt)}</p>
+                        <p className="text-lg font-bold text-gray-400">VS</p>
+                      </div>
+                    </div>
+
+                    {/* Time 2 */}
+                    <div className={`text-center ${game.winner === 2 ? 'font-bold' : ''}`}>
+                      <div className="space-y-1">
+                        <p>{getPlayerName(game.team2?.[0])}</p>
+                        <p>{getPlayerName(game.team2?.[1])}</p>
+                        <p className="text-2xl font-bold text-gray-900">{game.score2}</p>
+                      </div>
                     </div>
                   </div>
 
-                  {/* VS */}
-                  <div className="flex items-center justify-center">
-                    <div className="text-center">
-                      <p className="text-sm text-gray-500">{formatDate(game?.date || '')}</p>
-                      <p className="text-lg font-bold text-gray-400">VS</p>
-                    </div>
+                  {/* Indicador de Status */}
+                  <div className="mt-2 flex justify-center">
+                    {game.completed ? (
+                      <div className={`flex items-center space-x-1 text-sm ${
+                        game.winner === 1 ? 'text-blue-600' : 'text-green-600'
+                      }`}>
+                        <TrophyIcon className="h-4 w-4" />
+                        <span>Time {game.winner} venceu!</span>
+                      </div>
+                    ) : (
+                      <span className="text-sm text-yellow-600">
+                        Jogo em andamento
+                      </span>
+                    )}
                   </div>
-
-                  {/* Time 2 */}
-                  <div className={`text-center ${game?.winner === 2 ? 'font-bold' : ''}`}>
-                    <div className="space-y-1">
-                      <p>{getPlayerName(game?.team2?.[0] || '')}</p>
-                      <p>{getPlayerName(game?.team2?.[1] || '')}</p>
-                      <p className="text-2xl font-bold text-gray-900">{game?.score2 || 0}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Indicador de Vencedor */}
-                <div className="mt-2 flex justify-center">
-                  {game?.winner && (
-                    <div className={`flex items-center space-x-1 text-sm ${
-                      game?.winner === 1 ? 'text-blue-600' : 'text-green-600'
-                    }`}>
-                      <TrophyIcon className="h-4 w-4" />
-                      <span>Time {game?.winner} venceu!</span>
-                    </div>
-                  )}
-                </div>
-              </li>
-            ))}
-            {games.length === 0 && (
-              <li className="px-4 py-5 text-center text-gray-500">
-                Nenhum jogo registrado
-              </li>
-            )}
-          </ul>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
 
+      {/* Modal de Novo Jogo */}
       <GameModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        players={players.filter(p => competition.players.includes(p.id))}
         onSubmit={handleAddGame}
+        players={players}
+        competitionId={competition.id}
       />
     </div>
   );

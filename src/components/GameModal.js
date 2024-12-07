@@ -1,7 +1,7 @@
 import React from 'react';
 import GameForm from './GameForm';
 
-function GameModal({ isOpen, onClose, players, onSubmit }) {
+function GameModal({ isOpen, onClose, players, onSubmit, competitionId }) {
   if (!isOpen) return null;
 
   return (
@@ -21,6 +21,7 @@ function GameModal({ isOpen, onClose, players, onSubmit }) {
         </div>
         <GameForm
           players={players}
+          competitionId={competitionId}
           onSubmit={(gameData) => {
             onSubmit(gameData);
             onClose();

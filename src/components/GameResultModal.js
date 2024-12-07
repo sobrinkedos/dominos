@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const resultTypes = [
   { id: 'simple', label: 'Batida Simples', points: 1 },
@@ -11,12 +11,48 @@ const resultTypes = [
 function GameResultModal({ isOpen, onClose, onSubmit, game }) {
   const [selectedType, setSelectedType] = useState('');
   const [winningTeam, setWinningTeam] = useState(null);
+  const [team1Name, setTeam1Name] = useState('Time 1');
+  const [team2Name, setTeam2Name] = useState('Time 2');
 
-  if (!isOpen || !game) return null;
+  // Resetar estado quando o modal fecha
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedType('');
+      setWinningTeam(null);
+    }
+  }, [isOpen]);
 
-  // Preparar nomes das equipes com verificação de segurança
-  const team1Name = game?.team1?.join(' & ') || 'Time 1';
-  const team2Name = game?.team2?.join(' & ') || 'Time 2';
+  // Atualizar nomes das equipes quando o jogo mudar
+  useEffect(() => {
+    if (!game) {
+      setTeam1Name('Time 1');
+      setTeam2Name('Time 2');
+      return;
+    }
+
+    try {
+      const players = JSON.parse(localStorage.getItem('players') || '[]');
+      
+      const getPlayerName = (playerId) => {
+        const player = players.find(p => p.id === playerId);
+        return player ? player.name : 'Jogador';
+      };
+
+      if (Array.isArray(game.team1) && game.team1.length > 0) {
+        const team1Players = game.team1.map(getPlayerName);
+        setTeam1Name(team1Players.join(' & '));
+      }
+
+      if (Array.isArray(game.team2) && game.team2.length > 0) {
+        const team2Players = game.team2.map(getPlayerName);
+        setTeam2Name(team2Players.join(' & '));
+      }
+    } catch (error) {
+      console.error('Erro ao carregar nomes dos jogadores:', error);
+    }
+  }, [game]);
+
+  if (!isOpen) return null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -24,8 +60,6 @@ function GameResultModal({ isOpen, onClose, onSubmit, game }) {
       type: selectedType,
       winningTeam: selectedType === 'draw' ? null : parseInt(winningTeam),
     });
-    setSelectedType('');
-    setWinningTeam(null);
   };
 
   return (
@@ -103,7 +137,7 @@ function GameResultModal({ isOpen, onClose, onSubmit, game }) {
               type="submit"
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              Salvar
+              Confirmar
             </button>
           </div>
         </form>

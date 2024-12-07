@@ -180,10 +180,20 @@ function GameDetails() {
     games[gameIndex] = updatedGame;
     localStorage.setItem('games', JSON.stringify(games));
 
+    // Disparar evento customizado para atualizar a lista de jogos
+    window.dispatchEvent(new Event('gamesUpdated'));
+
     // Atualizar estado
     setGame(updatedGame);
     setCurrentMatch(updatedGame.completed ? null : updatedGame.matches[updatedGame.matches.length - 1]);
     setIsResultModalOpen(false);
+
+    // Se o jogo foi concluído, voltar para a página da competição
+    if (updatedGame.completed) {
+      setTimeout(() => {
+        navigate(`/competitions/${game.competitionId}`);
+      }, 1500); // Pequeno delay para mostrar o resultado final
+    }
   };
 
   if (isLoading) {
@@ -286,7 +296,7 @@ function GameDetails() {
         isOpen={isResultModalOpen}
         onClose={() => setIsResultModalOpen(false)}
         onSubmit={handleResultSubmit}
-        game={game}
+        game={currentMatch ? game : null}
       />
     </div>
   );
